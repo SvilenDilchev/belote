@@ -325,15 +325,6 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder) {
         }
     }
 
-    function resetCardsToPlayable(players) {
-        for (let i = 1; i <= 4; i++) {
-            const player = players[`player${i}`];
-            player.hand.forEach(card => {
-                card.isPlayable = true;
-            });
-        }
-    }
-
     const cardsPlayed = []; // Initialize an empty list to store played cards
 
     let winningCard = null;
@@ -399,30 +390,30 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder) {
     let hangingPoints = 0;
     let winners = null;
 
-    if(roundNumber == 7){
+    if (roundNumber == 7) {
         currentTaker.teamRoundScore += 10;
         currentTaker.teammate.teamRoundScore += 10;
 
         totalRoundScore = player1.teamRoundScore + player2.teamRoundScore;
 
-        if(bidder.teamRoundScore > totalRoundScore / 2){
+        if (bidder.teamRoundScore > totalRoundScore / 2) {
             bidderHardPoints = bidder.teamRoundScore / 10;
             bidderLastPointValue = bidder.teamRoundScore % 10;
-            
+
             opponetHardPoints = bidder.nextPlayer.teamRoundScore / 10;
             opponentLastPointValue = bidder.nextPlayer.teamRoundScore % 10;
 
-            if(bidderLastPointValue === opponentLastPointValue){
-                if(bidderHardPoints < opponetHardPoints){
+            if (bidderLastPointValue === opponentLastPointValue) {
+                if (bidderHardPoints < opponetHardPoints) {
                     bidderHardPoints += 1;
-                }else{
+                } else {
                     opponetHardPoints += 1;
                 }
-            }else{
-                if(bidderLastPointValue >= 6){
+            } else {
+                if (bidderLastPointValue >= 6) {
                     bidderHardPoints += 1;
                 }
-                if(opponentLastPointValue >= 6){
+                if (opponentLastPointValue >= 6) {
                     opponetHardPoints += 1;
                 }
             }
@@ -431,11 +422,11 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder) {
 
             winners = [bidder, bidder.teammate]
 
-        }else if(bidder.teamRoundScore === totalRoundScore / 2){
+        } else if (bidder.teamRoundScore === totalRoundScore / 2) {
             bidder.nextPlayer.teamTotalScore += totalRoundScore / 2;
             bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore / 2;
             hangingPoints = totalRoundScore / 2;
-        }else{
+        } else {
             bidder.nextPlayer.teamTotalScore += totalRoundScore;
             bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore;
 
@@ -452,6 +443,15 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder) {
         winners: winners,
         hangingPoints: hangingPoints
     };
+}
+
+function resetCardsToPlayable(players) {
+    for (let i = 1; i <= 4; i++) {
+        const player = players[`player${i}`];
+        player.hand.forEach(card => {
+            card.isPlayable = true;
+        });
+    }
 }
 
 function countPoints(cards) {
@@ -481,7 +481,7 @@ function countPoints(cards) {
             case '9':
                 if (card.isTrump) {
                     points += 14;
-                }else{
+                } else {
                     points += 0;
                 }
                 break;
@@ -513,7 +513,7 @@ async function getPlayerCardIndex(player) {
         const askForCardIndex = () => {
             console.log(`Playable cards: ${playableCards.join(', ')}`);
             rl.question(`${player.nickname}, enter the index of the card you want to play: `, (cardIndex) => {
-                
+
                 cardIndex = parseInt(cardIndex);
                 console.log('cardIndex: ' + cardIndex + '\n');
                 //console.log('playables include cardIndex: ' + playableCards.includes(cardIndex) + '\n');
@@ -542,12 +542,24 @@ function getPlayableCards(hand) {
 
 async function startBeloteRound(players) {
 
-    // Deal cards before displaying hands
+    deck.length = 0; // Clear the deck
+    for (const suit of suits) {
+        for (const rank of ranks) {
+            deck.push(cardLib.createCard(rank, suit, false, true));
+        }
+    }
+    cardLib.shuffleDeck(deck);
+
+    // Clear each player's hand
+    for (let i = 1; i <= 4; i++) {
+        const player = players[`player${i}`];
+        player.hand = [];
+    }
+
     dealCards(deck, players);
 
     // Display players
     displayPlayers(players);
-
     let biddingResult = await biddingPhase(players);
     while (biddingResult.gameBid === 'Pass') {
 
@@ -573,14 +585,7 @@ async function startBeloteRound(players) {
 
         // Shift the positions by 1
         let currentFirst = Object.values(players).find(player => player.position === 1);
-        let currentSecond = Object.values(players).find(player => player.position === 2);
-        let currentThird = Object.values(players).find(player => player.position === 3);
-        let currentFourth = Object.values(players).find(player => player.position === 4);
-
-        currentFirst.position = 4;
-        currentFourth.position = 3;
-        currentThird.position = 2;
-        currentSecond.position = 1;
+        shiftPositionsByOne(currentFirst);
 
         const biddingResult = await biddingPhase(players);
     }
@@ -619,9 +624,11 @@ async function startBeloteRound(players) {
             case 'Spades':
                 gameResult = await startSuitedGame(players, biddingResult.gameBid, i, biddingResult.biddingPlayer);
                 break;
-            case startNoTrumpsGame():
+            case "No Trumps":
+                gameResult = await startNoTrumpsGame();
                 break;
-            case startAllTrumpsGame():
+            case "All Trumps":
+                gameResult = await startAllTrumpsGame();
                 break;
             default:
                 // Handle other cases if needed
@@ -629,13 +636,13 @@ async function startBeloteRound(players) {
         }
     }
 
-    if(gameResult.hangingPoints === 0){
-        if(hangingPoints !== 0){
+    if (gameResult.hangingPoints === 0) {
+        if (hangingPoints !== 0) {
             gameResult.winners[0].teamTotalScore += hangingPoints;
             gameResult.winners[1].teamTotalScore += hangingPoints;
             hangingPoints = 0;
         }
-    }else{
+    } else {
         hangingPoints += gameResult.hangingPoints;
     }
 
@@ -645,13 +652,264 @@ async function startBeloteRound(players) {
         console.log(`Player ${i}: Team Total Score - ${player.teamTotalScore}`);
     }
 
+    shiftPositionsByOne(firstPlayer);
+
+}
+
+async function startNoTrumpsGame() {
+
+    function updatePlayableCards(player, requestedSuit) {
+        if (player.hand.some(card => card.suit === requestedSuit)) {
+            player.hand.forEach(card => {
+                if (card.suit !== requestedSuit) {
+                    card.isPlayable = false;
+                }
+            });
+        }
+    }
+
+    const cardsPlayed = []; // Initialize an empty list to store played cards
+
+    let winningCard = null;
+    let currentTaker = null;
+    let requestedSuit = null;
+    let player = null;
+    let selectedCardIndex = null;
+    let currentPlayerIndex = 1;
+
+    for (let i = 1; i <= 4; i++) {
+
+        if (currentPlayerIndex == 1) {
+            resetCardsToPlayable(players);
+            player = Object.values(players).find(player => player.position === 1);
+            selectedCardIndex = await getPlayerCardIndex(player) - 1;
+            currentTaker = player;
+            winningCard = player.hand[selectedCardIndex];
+            requestedSuit = player.hand[selectedCardIndex].suit;
+        } else {
+            player = Object.values(players).find(player => player.position === currentPlayerIndex);
+            updatePlayableCards(player, requestedSuit);
+            console.log("\n");
+            selectedCardIndex = await getPlayerCardIndex(player) - 1;
+        }
+
+        const selectedCard = player.hand[selectedCardIndex]; // Get the selected card
+        cardsPlayed.push(selectedCard); // Add the selected card to the cardsPlayed list
+
+        if (selectedCard.suit === requestedSuit) {
+            if (compareCardRankNotTrump(selectedCard, winningCard) > 0) {
+                winningCard = selectedCard;
+                currentTaker = player;
+            }
+        }
+
+        currentPlayerIndex = (currentPlayerIndex % 4) + 1;
+        console.log(`${player.nickname} played: ${selectedCard.rank} of ${selectedCard.suit}`);
+        player.hand.splice(selectedCardIndex, 1); // Remove the selected card from the player's hand
+    }
+
+    console.log(`\n${currentTaker.nickname} took the cards!`);
+    roundPoints = countPoints(cardsPlayed);
+    console.log(`Round points: ${roundPoints}\n`);
+    currentTaker.teamRoundScore += roundPoints;
+    currentTaker.teammate.teamRoundScore += roundPoints;
+
+    let hangingPoints = 0;
+    let winners = null;
+
+    if (roundNumber == 7) {
+        currentTaker.teamRoundScore += 10;
+        currentTaker.teammate.teamRoundScore += 10;
+
+        totalRoundScore = 2 * (player1.teamRoundScore + player2.teamRoundScore);
+
+        if (bidder.teamRoundScore > totalRoundScore / 2) {
+            bidderHardPoints = bidder.teamRoundScore / 10;
+            bidderLastPointValue = bidder.teamRoundScore % 10;
+
+            opponetHardPoints = bidder.nextPlayer.teamRoundScore / 10;
+            opponentLastPointValue = bidder.nextPlayer.teamRoundScore % 10;
+
+            if (bidderLastPointValue === opponentLastPointValue) {
+                if (bidderHardPoints < opponetHardPoints) {
+                    bidderHardPoints += 1;
+                } else {
+                    opponetHardPoints += 1;
+                }
+            } else {
+                if (bidderLastPointValue >= 5) {
+                    bidderHardPoints += 1;
+                }
+                if (opponentLastPointValue >= 5) {
+                    opponetHardPoints += 1;
+                }
+            }
+            bidder.teamTotalScore += bidderHardPoints;
+            bidder.nextPlayer.teamTotalScore += opponetHardPoints;
+
+            winners = [bidder, bidder.teammate]
+
+        } else if (bidder.teamRoundScore === totalRoundScore / 2) {
+            bidder.nextPlayer.teamTotalScore += totalRoundScore / 2;
+            bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore / 2;
+            hangingPoints = totalRoundScore / 2;
+        } else {
+            bidder.nextPlayer.teamTotalScore += totalRoundScore;
+            bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore;
+
+            winners = [bidder.nextPlayer, bidder.nextPlayer.teammate]
+        }
+    }
+
+    currentTaker.position = 1;
+    currentTaker.nextPlayer.position = 2;
+    currentTaker.nextPlayer.nextPlayer.position = 3;
+    currentTaker.nextPlayer.nextPlayer.nextPlayer.position = 4;
+
+    return {
+        winners: winners,
+        hangingPoints: hangingPoints
+    };
+}
+
+async function startAllTrumpsGame() {
+    function updatePlayableCards(player, requestedSuit) {
+        if (player.hand.some(card => card.suit === requestedSuit)) {
+
+            let hasOverTrump = false;
+            player.hand.forEach(card => {
+                if (card.isTrump && (compareCardRankTrump(card, winningCard) > 0)) {
+                    hasOverTrump = true;
+                }
+            });
+            console.log("has over trump: " + hasOverTrump);
+            if (hasOverTrump) {
+                player.hand.forEach(card => {
+                    if (card.isTrump && !(compareCardRankTrump(card, winningCard) > 0)) {
+                        card.isPlayable = false;
+                    }
+                });
+            }
+
+            player.hand.forEach(card => {
+                if (card.suit !== requestedSuit) {
+                    card.isPlayable = false;
+                }
+            });
+        }
+    }
+
+    const cardsPlayed = []; // Initialize an empty list to store played cards
+
+    let winningCard = null;
+    let currentTaker = null;
+    let requestedSuit = null;
+    let player = null;
+    let selectedCardIndex = null;
+    let currentPlayerIndex = 1;
+
+    for (let i = 1; i <= 4; i++) {
+
+        if (currentPlayerIndex == 1) {
+            resetCardsToPlayable(players);
+            player = Object.values(players).find(player => player.position === 1);
+            selectedCardIndex = await getPlayerCardIndex(player) - 1;
+            currentTaker = player;
+            winningCard = player.hand[selectedCardIndex];
+            requestedSuit = player.hand[selectedCardIndex].suit;
+        } else {
+            player = Object.values(players).find(player => player.position === currentPlayerIndex);
+            updatePlayableCards(player, requestedSuit);
+            console.log("\n");
+            selectedCardIndex = await getPlayerCardIndex(player) - 1;
+        }
+
+        const selectedCard = player.hand[selectedCardIndex]; // Get the selected card
+        cardsPlayed.push(selectedCard); // Add the selected card to the cardsPlayed list
+
+        if (selectedCard.suit === requestedSuit) {
+            if (compareCardRankTrump(selectedCard, winningCard) > 0) {
+                winningCard = selectedCard;
+                currentTaker = player;
+            }
+        }
+
+        currentPlayerIndex = (currentPlayerIndex % 4) + 1;
+        console.log(`${player.nickname} played: ${selectedCard.rank} of ${selectedCard.suit}`);
+        player.hand.splice(selectedCardIndex, 1); // Remove the selected card from the player's hand
+    }
+
+    console.log(`\n${currentTaker.nickname} took the cards!`);
+    roundPoints = countPoints(cardsPlayed);
+    console.log(`Round points: ${roundPoints}\n`);
+    currentTaker.teamRoundScore += roundPoints;
+    currentTaker.teammate.teamRoundScore += roundPoints;
+
+    let hangingPoints = 0;
+    let winners = null;
+
+    if (roundNumber == 7) {
+        currentTaker.teamRoundScore += 10;
+        currentTaker.teammate.teamRoundScore += 10;
+
+        totalRoundScore = player1.teamRoundScore + player2.teamRoundScore;
+
+        if (bidder.teamRoundScore > totalRoundScore / 2) {
+            bidderHardPoints = bidder.teamRoundScore / 10;
+            bidderLastPointValue = bidder.teamRoundScore % 10;
+
+            opponetHardPoints = bidder.nextPlayer.teamRoundScore / 10;
+            opponentLastPointValue = bidder.nextPlayer.teamRoundScore % 10;
+
+            if (bidderLastPointValue === opponentLastPointValue) {
+                if (bidderHardPoints < opponetHardPoints) {
+                    bidderHardPoints += 1;
+                } else {
+                    opponetHardPoints += 1;
+                }
+            } else {
+                if (bidderLastPointValue >= 4) {
+                    bidderHardPoints += 1;
+                }
+                if (opponentLastPointValue >= 4) {
+                    opponetHardPoints += 1;
+                }
+            }
+            bidder.teamTotalScore += bidderHardPoints;
+            bidder.nextPlayer.teamTotalScore += opponetHardPoints;
+
+            winners = [bidder, bidder.teammate]
+
+        } else if (bidder.teamRoundScore === totalRoundScore / 2) {
+            bidder.nextPlayer.teamTotalScore += totalRoundScore / 2;
+            bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore / 2;
+            hangingPoints = totalRoundScore / 2;
+        } else {
+            bidder.nextPlayer.teamTotalScore += totalRoundScore;
+            bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore;
+
+            winners = [bidder.nextPlayer, bidder.nextPlayer.teammate]
+        }
+    }
+
+    currentTaker.position = 1;
+    currentTaker.nextPlayer.position = 2;
+    currentTaker.nextPlayer.nextPlayer.position = 3;
+    currentTaker.nextPlayer.nextPlayer.nextPlayer.position = 4;
+
+    return {
+        winners: winners,
+        hangingPoints: hangingPoints
+    };
+}
+
+function shiftPositionsByOne(firstPlayer) {
     //Shift positions by one
     firstPlayer.position = 4;
     firstPlayer.nextPlayer.position = 1;
     firstPlayer.nextPlayer.nextPlayer.position = 2;
     firstPlayer.nextPlayer.nextPlayer.nextPlayer.position = 3;
 }
-
 
 async function startBeloteGame() {
 
@@ -665,12 +923,17 @@ async function startBeloteGame() {
 
     console.log('\nBelote game started!\n');
 
-    while (players.player1.teamTotalScore < 151 && players.player2.teamTotalScore < 151 && players.player1.teamTotalScore !== players.player2.teamTotalScore) {
+    console.log(players.player1.teamTotalScore < 151)
+    console.log(players.player2.teamTotalScore < 151)
+    console.log(players.player1.teamTotalScore === players.player2.teamTotalScore)
+    console.log(players.player1.teamTotalScore >= 151)
+    while (players.player1.teamTotalScore < 151 && players.player2.teamTotalScore < 151 || (players.player1.teamTotalScore === players.player2.teamTotalScore && players.player1.teamTotalScore >= 151)) {
         await startBeloteRound(players);
     }
-    if(players.player1.teamTotalScore > players.player2.teamTotalScore){
+
+    if (players.player1.teamTotalScore > players.player2.teamTotalScore) {
         console.log(`${players.player1.nickname} and ${players.player3.nickname} won!`);
-    }else{
+    } else {
         console.log(`${players.player2.nickname} and ${players.player4.nickname} won!`);
     }
 }
