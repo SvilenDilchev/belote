@@ -625,10 +625,10 @@ async function startBeloteRound(players) {
                 gameResult = await startSuitedGame(players, biddingResult.gameBid, i, biddingResult.biddingPlayer);
                 break;
             case "No Trumps":
-                gameResult = await startNoTrumpsGame();
+                gameResult = await startNoTrumpsGame(players, i, biddingResult.biddingPlayer);
                 break;
             case "All Trumps":
-                gameResult = await startAllTrumpsGame();
+                gameResult = await startAllTrumpsGame(players, i, biddingResult.biddingPlayer);
                 break;
             default:
                 // Handle other cases if needed
@@ -656,7 +656,7 @@ async function startBeloteRound(players) {
 
 }
 
-async function startNoTrumpsGame() {
+async function startNoTrumpsGame(players, roundNumber, bidder) {
 
     function updatePlayableCards(player, requestedSuit) {
         if (player.hand.some(card => card.suit === requestedSuit)) {
@@ -772,7 +772,7 @@ async function startNoTrumpsGame() {
     };
 }
 
-async function startAllTrumpsGame() {
+async function startAllTrumpsGame(players, roundNumber, bidder) {
     function updatePlayableCards(player, requestedSuit) {
         if (player.hand.some(card => card.suit === requestedSuit)) {
 
