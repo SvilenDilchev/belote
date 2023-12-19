@@ -394,57 +394,11 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder) {
     let winners = null;
 
     if (roundNumber == 7) {
-        currentTaker.teamRoundScore += 10;
-        currentTaker.teammate.teamRoundScore += 10;
-
-        totalRoundScore = players.player1.teamRoundScore + players.player2.teamRoundScore;
-
-        if (bidder.teamRoundScore > totalRoundScore / 2) {
-            bidderHardPoints = Math.floor(bidder.teamRoundScore / 10);
-            bidderLastPointValue = bidder.teamRoundScore % 10;
-
-            opponetHardPoints = Math.floor(bidder.nextPlayer.teamRoundScore / 10);
-            opponentLastPointValue = bidder.nextPlayer.teamRoundScore % 10;
-
-            if (bidderLastPointValue === opponentLastPointValue) {
-                if (bidderHardPoints < opponetHardPoints) {
-                    bidderHardPoints += 1;
-                } else {
-                    opponetHardPoints += 1;
-                }
-            } else {
-                if (bidderLastPointValue >= 6) {
-                    bidderHardPoints += 1;
-                }
-                if (opponentLastPointValue >= 6) {
-                    opponetHardPoints += 1;
-                }
-            }
-            bidder.teamTotalScore += bidderHardPoints;
-            bidder.teammate.teamTotalScore += bidderHardPoints;
-            bidder.nextPlayer.teamTotalScore += opponetHardPoints;
-            bidder.nextPlayer.teammate.teamTotalScore += opponetHardPoints;
-
-            winners = [bidder, bidder.teammate]
-
-        } else if (bidder.teamRoundScore === totalRoundScore / 2) {
-            bidder.nextPlayer.teamTotalScore += Math.floor(totalRoundScore / 20);
-            bidder.nextPlayer.teammate.teamTotalScore += Math.floor(totalRoundScore / 20);
-            hangingPoints = Math.floor(totalRoundScore / 20);
-            if(bidder.teamRoundScore % 10 === 6){
-                bidder.nextPlayer.teamTotalScore += 1;
-                bidder.nextPlayer.teammate.teamTotalScore += 1;
-            }
-        } else {
-            bidder.nextPlayer.teamTotalScore += Math.floor(totalRoundScore / 10);
-            bidder.nextPlayer.teammate.teamTotalScore += Math.floor(totalRoundScore / 10);
-
-            winners = [bidder.nextPlayer, bidder.nextPlayer.teammate]
+        if (roundNumber == 7) {
+            calculationResult = calculatePoints(currentTaker, bidder, players, "Suited");
+            winners = calculationResult.winners;
+            hangingPoints = calculationResult.hangingPoints;
         }
-        bidder.teamRoundScore = 0;
-        bidder.nextPlayer.teamRoundScore = 0;
-        bidder.teammate.teamRoundScore = 0;
-        bidder.nextPlayer.teammate.teamRoundScore = 0;
     }
 
     currentTaker.position = 1;
@@ -731,53 +685,9 @@ async function startNoTrumpsGame(players, roundNumber, bidder) {
     let winners = null;
 
     if (roundNumber == 7) {
-        currentTaker.teamRoundScore += 10;
-        currentTaker.teammate.teamRoundScore += 10;
-
-        totalRoundScore = 2 * (players.player1.teamRoundScore + players.player2.teamRoundScore);
-
-        if (bidder.teamRoundScore > totalRoundScore / 2) {
-            bidderHardPoints = Math.floor(bidder.teamRoundScore / 10);
-            bidderLastPointValue = bidder.teamRoundScore % 10;
-
-            opponetHardPoints = Math.floor(bidder.nextPlayer.teamRoundScore / 10);
-            opponentLastPointValue = bidder.nextPlayer.teamRoundScore % 10;
-
-            if (bidderLastPointValue === opponentLastPointValue) {
-                if (bidderHardPoints < opponetHardPoints) {
-                    bidderHardPoints += 1;
-                } else {
-                    opponetHardPoints += 1;
-                }
-            } else {
-                if (bidderLastPointValue >= 5) {
-                    bidderHardPoints += 1;
-                }
-                if (opponentLastPointValue >= 5) {
-                    opponetHardPoints += 1;
-                }
-            }
-            bidder.teamTotalScore += bidderHardPoints;
-            bidder.teammate.teamTotalScore += bidderHardPoints;
-            bidder.nextPlayer.teamTotalScore += opponetHardPoints;
-            bidder.nextPlayer.teammate.teamTotalScore += opponetHardPoints;
-
-            winners = [bidder, bidder.teammate]
-
-        } else if (bidder.teamRoundScore === totalRoundScore / 2) {
-            bidder.nextPlayer.teamTotalScore += totalRoundScore / 20;
-            bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore / 20;
-            hangingPoints = totalRoundScore / 20;
-        } else {
-            bidder.nextPlayer.teamTotalScore += totalRoundScore / 10;
-            bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore / 10;
-
-            winners = [bidder.nextPlayer, bidder.nextPlayer.teammate]
-        }
-        bidder.teamRoundScore = 0;
-        bidder.nextPlayer.teamRoundScore = 0;
-        bidder.teammate.teamRoundScore = 0;
-        bidder.nextPlayer.teammate.teamRoundScore = 0;
+        calculationResult = calculatePoints(currentTaker, bidder, players, "No Trumps");
+        winners = calculationResult.winners;
+        hangingPoints = calculationResult.hangingPoints;
     }
 
     currentTaker.position = 1;
@@ -868,54 +778,9 @@ async function startAllTrumpsGame(players, roundNumber, bidder) {
     let winners = null;
 
     if (roundNumber == 7) {
-        currentTaker.teamRoundScore += 10;
-        currentTaker.teammate.teamRoundScore += 10;
-
-        totalRoundScore = players.player1.teamRoundScore + players.player2.teamRoundScore;
-
-        if (bidder.teamRoundScore > totalRoundScore / 2) {
-            bidderHardPoints = Math.floor(bidder.teamRoundScore / 10);
-            bidderLastPointValue = bidder.teamRoundScore % 10;
-
-            opponetHardPoints = Math.floor(bidder.nextPlayer.teamRoundScore / 10);
-            opponentLastPointValue = bidder.nextPlayer.teamRoundScore % 10;
-
-            if (bidderLastPointValue === opponentLastPointValue) {
-                if (bidderHardPoints < opponetHardPoints) {
-                    bidderHardPoints += 1;
-                } else {
-                    opponetHardPoints += 1;
-                }
-            } else {
-                if (bidderLastPointValue >= 4) {
-                    bidderHardPoints += 1;
-                }
-                if (opponentLastPointValue >= 4) {
-                    opponetHardPoints += 1;
-                }
-            }
-            bidder.teamTotalScore += bidderHardPoints;
-            bidder.teammate.teamTotalScore += bidderHardPoints;
-            bidder.nextPlayer.teamTotalScore += opponetHardPoints;
-            bidder.nextPlayer.teammate.teamTotalScore += opponetHardPoints;
-
-            winners = [bidder, bidder.teammate]
-
-        } else if (bidder.teamRoundScore === totalRoundScore / 2) {
-            bidder.nextPlayer.teamTotalScore += Math.ceil(totalRoundScore / 20);
-            bidder.nextPlayer.teammate.teamTotalScore += Math.ceil(totalRoundScore / 20);
-            hangingPoints = Math.ceil(totalRoundScore / 20);
-        } else {
-            bidder.nextPlayer.teamTotalScore += Math.ceil(totalRoundScore / 10);
-            bidder.nextPlayer.teammate.teamTotalScore += Math.ceil(totalRoundScore / 10);
-
-            winners = [bidder.nextPlayer, bidder.nextPlayer.teammate]
-        }
-
-        bidder.teamRoundScore = 0;
-        bidder.nextPlayer.teamRoundScore = 0;
-        bidder.teammate.teamRoundScore = 0;
-        bidder.nextPlayer.teammate.teamRoundScore = 0;
+        calculationResult = calculatePoints(currentTaker, bidder, players, "All Trumps");
+        winners = calculationResult.winners;
+        hangingPoints = calculationResult.hangingPoints;
     }
 
     currentTaker.position = 1;
@@ -928,6 +793,118 @@ async function startAllTrumpsGame(players, roundNumber, bidder) {
         winners: winners,
         hangingPoints: hangingPoints
     };
+}
+
+function calculatePoints(currentTaker, bidder, players, gameType) {
+    let hangingPoints = 0;
+    let winners = null;
+    
+    currentTaker.teamRoundScore += 10;
+    currentTaker.teammate.teamRoundScore += 10;
+
+    if(gameType === "No Trumps"){
+        totalRoundScore = 2*(players.player1.teamRoundScore + players.player2.teamRoundScore);
+    }else{
+        totalRoundScore = players.player1.teamRoundScore + players.player2.teamRoundScore;
+    }
+    
+    if (bidder.teamRoundScore > totalRoundScore / 2) {
+        bidderHardPoints = Math.floor(bidder.teamRoundScore / 10);
+        bidderLastPointValue = bidder.teamRoundScore % 10;
+
+        opponetHardPoints = Math.floor(bidder.nextPlayer.teamRoundScore / 10);
+        opponentLastPointValue = bidder.nextPlayer.teamRoundScore % 10;
+
+        let roundingIndex = 0;
+        switch (gameType) {
+            case "Suited":
+                roundingIndex = 6;
+                break;
+            case "No Trumps":
+                roundingIndex = 5;
+                break;
+            case "All Trumps":
+                roundingIndex = 4;
+                break;
+            default:
+                // Handle other cases if needed
+                break;   
+        }
+
+        if (bidderLastPointValue === opponentLastPointValue) {
+            if (bidderHardPoints < opponetHardPoints) {
+                bidderHardPoints += 1;
+            } else {
+                opponetHardPoints += 1;
+            }
+        } else {
+            if (bidderLastPointValue >= roundingIndex) {
+                bidderHardPoints += 1;
+            }
+            if (opponentLastPointValue >= roundingIndex) {
+                opponetHardPoints += 1;
+            }
+        }
+        bidder.teamTotalScore += bidderHardPoints;
+        bidder.teammate.teamTotalScore += bidderHardPoints;
+        bidder.nextPlayer.teamTotalScore += opponetHardPoints;
+        bidder.nextPlayer.teammate.teamTotalScore += opponetHardPoints;
+
+        winners = [bidder, bidder.teammate]
+
+    } else if (bidder.teamRoundScore === totalRoundScore / 2) {
+        switch (gameType) {
+            case "Suited":
+                bidder.nextPlayer.teamTotalScore += Math.floor(totalRoundScore / 20);
+                bidder.nextPlayer.teammate.teamTotalScore += Math.floor(totalRoundScore / 20);
+                hangingPoints = Math.floor(totalRoundScore / 20);
+                if (bidder.teamRoundScore % 10 === 6) {
+                    bidder.nextPlayer.teamTotalScore += 1;
+                    bidder.nextPlayer.teammate.teamTotalScore += 1;
+                }
+                break;
+            case "No Trumps":
+                bidder.nextPlayer.teamTotalScore += totalRoundScore / 20;
+                bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore / 20;
+                hangingPoints = totalRoundScore / 20;
+                break;
+            case "All Trumps":
+                bidder.nextPlayer.teamTotalScore += Math.ceil(totalRoundScore / 20);
+                bidder.nextPlayer.teammate.teamTotalScore += Math.ceil(totalRoundScore / 20);
+                hangingPoints = Math.ceil(totalRoundScore / 20);
+                break;
+            default:
+                break;   
+        }
+    } else {
+        switch (gameType) { 
+            case "Suited":
+                bidder.nextPlayer.teamTotalScore += Math.floor(totalRoundScore / 10);
+                bidder.nextPlayer.teammate.teamTotalScore += Math.floor(totalRoundScore / 10);
+                break;
+            case "No Trumps":
+                bidder.nextPlayer.teamTotalScore += totalRoundScore / 10;
+                bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore / 10;
+                break;
+            case "All Trumps":
+                bidder.nextPlayer.teamTotalScore += Math.ceil(totalRoundScore / 10);
+                bidder.nextPlayer.teammate.teamTotalScore += Math.ceil(totalRoundScore / 10);
+                break;
+            default:
+                break;
+        }
+        winners = [bidder.nextPlayer, bidder.nextPlayer.teammate]
+    }
+
+    bidder.teamRoundScore = 0;
+    bidder.nextPlayer.teamRoundScore = 0;
+    bidder.teammate.teamRoundScore = 0;
+    bidder.nextPlayer.teammate.teamRoundScore = 0;
+
+    return {
+        winners: winners,
+        hangingPoints: hangingPoints
+    }
 }
 
 function shiftPositionsByOne(firstPlayer) {
