@@ -65,7 +65,6 @@ function displayPlayers(players) {
     console.log('\n');
 }
 
-
 // Prompt each player for a nickname
 function getPlayerNickname(playerNumber) {
     return new Promise(resolve => {
@@ -103,7 +102,6 @@ function dealCards(deck, players) {
     }
 }
 
-
 function sortCardsBySuit(hand) {
     const suits = ['Clubs', 'Diamonds', 'Spades', 'Hearts'];
     const sortedHand = [];
@@ -115,8 +113,6 @@ function sortCardsBySuit(hand) {
 
     return sortedHand;
 }
-
-
 
 function sortCardsByPokerOrder(cards) {
     const pokerOrder = ['Ace', 'King', 'Queen', 'Jack', '10', '9', '8', '7'];
@@ -145,6 +141,7 @@ async function requestBids(players) {
     let gameBid = 'Pass';
     let biddingPlayer = null;
     let validBids = ['Clubs', 'Diamonds', 'Hearts', 'Spades', 'No Trumps', 'All Trumps'];
+    let multiplier = 1;
 
     while (passCount < 4 && (bidCount === 0 || passCount < 3)) {
 
@@ -158,15 +155,33 @@ async function requestBids(players) {
         const bid = await getPlayerBid(player, validBids);
 
 
-        if (bid === 'Pass') {
+        doubleBreak: if (bid === 'Pass') {
             passCount++;
         } else {
             bidCount++;
             passCount = 0;
-            gameBid = bid;
             biddingPlayer = player;
+
+            if (bid === 'Double') {
+                multiplier = 2;
+                validBids.push('Re-Double');
+                validBids = validBids.filter(bid => bid !== 'Double');
+                break doubleBreak;
+
+            } else if (bid === 'Re-Double') {
+                multiplier = 4;
+                validBids = validBids.filter(bid => bid !== 'Re-Double');
+                break doubleBreak
+            }
+            multiplier = 1;
+
+            gameBid = bid;
             // Get the index of the current game bid
             const gameBidIndex = validBids.indexOf(gameBid);
+
+            if (!validBids.includes('Double')) {
+                validBids.push('Double');
+            }
 
             // Remove bids with lower index than the current game bid
             validBids = validBids.slice(gameBidIndex + 1);
@@ -177,6 +192,7 @@ async function requestBids(players) {
     return {
         gameBid: gameBid,
         biddingPlayer: biddingPlayer,
+        multiplier: multiplier
     };
 }
 
@@ -199,7 +215,6 @@ function getPlayerBid(player, validBids) {
     });
 }
 
-
 function dealRestOfDeck(deck, players) {
     let currentPlayerIndex = 1;
     let cardIndex = 0;
@@ -211,7 +226,6 @@ function dealRestOfDeck(deck, players) {
         currentPlayerIndex = (currentPlayerIndex % 4) + 1;
     }
 }
-
 
 function changeIsTrumpValue(player, suit) {
     player.hand.forEach(card => {
@@ -245,9 +259,7 @@ async function biddingPhase(players) {
     return gameBid;
 }
 
-
-
-async function startSuitedGame(players, gameBid, roundNumber, bidder) {
+async function startSuitedGame(players, gameBid, roundNumber, bidder, multiplier) {
 
     function updatePlayableCards(player, requestedSuit, currentTaker, winningCard, gameBid) {
 
@@ -395,7 +407,7 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder) {
 
     if (roundNumber == 7) {
         if (roundNumber == 7) {
-            calculationResult = calculatePoints(currentTaker, bidder, players, "Suited");
+            calculationResult = calculatePoints(currentTaker, bidder, players, "Suited", multiplier);
             winners = calculationResult.winners;
             hangingPoints = calculationResult.hangingPoints;
         }
@@ -460,7 +472,6 @@ function countPoints(cards) {
 
     return points;
 }
-
 
 function compareCardRankNotTrump(card1, card2) {
     const rankOrder = ['7', '8', '9', 'Jack', 'Queen', 'King', '10', 'Ace'];
@@ -589,13 +600,13 @@ async function startBeloteRound(players) {
             case 'Diamonds':
             case 'Hearts':
             case 'Spades':
-                gameResult = await startSuitedGame(players, biddingResult.gameBid, i, biddingResult.biddingPlayer);
+                gameResult = await startSuitedGame(players, biddingResult.gameBid, i, biddingResult.biddingPlayer, biddingResult.multiplier);
                 break;
             case "No Trumps":
-                gameResult = await startNoTrumpsGame(players, i, biddingResult.biddingPlayer);
+                gameResult = await startNoTrumpsGame(players, i, biddingResult.biddingPlayer, biddingResult.multiplier);
                 break;
             case "All Trumps":
-                gameResult = await startAllTrumpsGame(players, i, biddingResult.biddingPlayer);
+                gameResult = await startAllTrumpsGame(players, i, biddingResult.biddingPlayer, biddingResult.multiplier);
                 break;
             default:
                 // Handle other cases if needed
@@ -623,7 +634,7 @@ async function startBeloteRound(players) {
 
 }
 
-async function startNoTrumpsGame(players, roundNumber, bidder) {
+async function startNoTrumpsGame(players, roundNumber, bidder, multiplier) {
 
     function updatePlayableCards(player, requestedSuit) {
         if (player.hand.some(card => card.suit === requestedSuit)) {
@@ -685,7 +696,7 @@ async function startNoTrumpsGame(players, roundNumber, bidder) {
     let winners = null;
 
     if (roundNumber == 7) {
-        calculationResult = calculatePoints(currentTaker, bidder, players, "No Trumps");
+        calculationResult = calculatePoints(currentTaker, bidder, players, "No Trumps", multiplier);
         winners = calculationResult.winners;
         hangingPoints = calculationResult.hangingPoints;
     }
@@ -701,7 +712,7 @@ async function startNoTrumpsGame(players, roundNumber, bidder) {
     };
 }
 
-async function startAllTrumpsGame(players, roundNumber, bidder) {
+async function startAllTrumpsGame(players, roundNumber, bidder, multiplier) {
     function updatePlayableCards(player, requestedSuit, winningCard) {
         if (player.hand.some(card => card.suit === requestedSuit)) {
             let hasOverTrump = false;
@@ -778,7 +789,7 @@ async function startAllTrumpsGame(players, roundNumber, bidder) {
     let winners = null;
 
     if (roundNumber == 7) {
-        calculationResult = calculatePoints(currentTaker, bidder, players, "All Trumps");
+        calculationResult = calculatePoints(currentTaker, bidder, players, "All Trumps", multiplier);
         winners = calculationResult.winners;
         hangingPoints = calculationResult.hangingPoints;
     }
@@ -795,20 +806,52 @@ async function startAllTrumpsGame(players, roundNumber, bidder) {
     };
 }
 
-function calculatePoints(currentTaker, bidder, players, gameType) {
+function calculatePoints(currentTaker, bidder, players, gameType, multiplier) {
     let hangingPoints = 0;
     let winners = null;
-    
+    let declarationPoints = 0;
+
     currentTaker.teamRoundScore += 10;
     currentTaker.teammate.teamRoundScore += 10;
 
-    if(gameType === "No Trumps"){
-        totalRoundScore = 2*(players.player1.teamRoundScore + players.player2.teamRoundScore);
-    }else{
+    if (gameType === "No Trumps") {
+        totalRoundScore = 2 * (players.player1.teamRoundScore + players.player2.teamRoundScore);
+    } else {
         totalRoundScore = players.player1.teamRoundScore + players.player2.teamRoundScore;
     }
-    
+
     if (bidder.teamRoundScore > totalRoundScore / 2) {
+
+        if (multiplier !== 1) {
+            switch (gameType) {
+                case "Suited":
+                    bidder.teamTotalScore += 16 * multiplier + declarationPoints;
+                    bidder.teammate.teamTotalScore += 16 * multiplier + declarationPoints;
+                    winners = [bidder, bidder.teammate]
+                    return {
+                        winners: winners,
+                        hangingPoints: hangingPoints
+                    }
+                case "No Trumps":
+                    bidder.teamTotalScore += 26 * multiplier;
+                    bidder.teammate.teamTotalScore += 26 * multiplier;
+                    winners = [bidder, bidder.teammate]
+                    return {
+                        winners: winners,
+                        hangingPoints: hangingPoints
+                    }
+                case "All Trumps":
+                    bidder.teamTotalScore += 26 * multiplier + declarationPoints;
+                    bidder.teammate.teamTotalScore += 26 * multiplier + declarationPoints;
+                    winners = [bidder, bidder.teammate]
+                    return {
+                        winners: winners,
+                        hangingPoints: hangingPoints
+                    }
+                default:
+                    break;
+            }
+        }
         bidderHardPoints = Math.floor(bidder.teamRoundScore / 10);
         bidderLastPointValue = bidder.teamRoundScore % 10;
 
@@ -828,7 +871,7 @@ function calculatePoints(currentTaker, bidder, players, gameType) {
                 break;
             default:
                 // Handle other cases if needed
-                break;   
+                break;
         }
 
         if (bidderLastPointValue === opponentLastPointValue) {
@@ -853,6 +896,38 @@ function calculatePoints(currentTaker, bidder, players, gameType) {
         winners = [bidder, bidder.teammate]
 
     } else if (bidder.teamRoundScore === totalRoundScore / 2) {
+
+        if (multiplier !== 1) {
+            switch (gameType) {
+                case "Suited":
+                    bidder.nextPlayer.teamTotalScore += 8 * multiplier + declarationPoints / 2;
+                    bidder.nextPlayer.teammate.teamTotalScore += 6 * multiplier + declarationPoints / 2;
+                    hangingPoints = 8 * multiplier + declarationPoints / 2;
+                    return {
+                        winners: winners,
+                        hangingPoints: hangingPoints
+                    }
+                case "No Trumps":
+                    bidder.nextPlayer.teamTotalScore += 13 * multiplier;
+                    bidder.nextPlayer.teammate.teamTotalScore += 13 * multiplier;
+                    hangingPoints = 13 * multiplier;
+                    return {
+                        winners: winners,
+                        hangingPoints: hangingPoints
+                    }
+                case "All Trumps":
+                    bidder.nextPlayer.teamTotalScore += 13 * multiplier + declarationPoints / 2;
+                    bidder.nextPlayer.teammate.teamTotalScore += 13 * multiplier + declarationPoints / 2;
+                    hangingPoints = 13 * multiplier + declarationPoints / 2;
+                    return {
+                        winners: winners,
+                        hangingPoints: hangingPoints
+                    }
+                default:
+                    break;
+            }
+        }
+
         switch (gameType) {
             case "Suited":
                 bidder.nextPlayer.teamTotalScore += Math.floor(totalRoundScore / 20);
@@ -874,28 +949,55 @@ function calculatePoints(currentTaker, bidder, players, gameType) {
                 hangingPoints = Math.ceil(totalRoundScore / 20);
                 break;
             default:
-                break;   
+                break;
         }
     } else {
-        switch (gameType) { 
-            case "Suited":
-                bidder.nextPlayer.teamTotalScore += Math.floor(totalRoundScore / 10);
-                bidder.nextPlayer.teammate.teamTotalScore += Math.floor(totalRoundScore / 10);
-                break;
-            case "No Trumps":
-                bidder.nextPlayer.teamTotalScore += totalRoundScore / 10;
-                bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore / 10;
-                break;
-            case "All Trumps":
-                bidder.nextPlayer.teamTotalScore += Math.ceil(totalRoundScore / 10);
-                bidder.nextPlayer.teammate.teamTotalScore += Math.ceil(totalRoundScore / 10);
-                break;
-            default:
-                break;
-        }
-        winners = [bidder.nextPlayer, bidder.nextPlayer.teammate]
-    }
+        if (multiplier !== 1) {
+            switch (gameType) {
+                case "Suited":
+                    bidder.nextPlayer.teamTotalScore += 16 * multiplier + declarationPoints;
+                    bidder.nextPlayer.teammate.teamTotalScore += 16 * multiplier + declarationPoints;
+                    return {
+                        winners: winners,
+                        hangingPoints: hangingPoints
+                    }
+                case "No Trumps":
+                    bidder.nextPlayer.teamTotalScore += 26 * multiplier;
+                    bidder.nextPlayer.teammate.teamTotalScore += 26 * multiplier;
+                    return {
+                        winners: winners,
+                        hangingPoints: hangingPoints
+                    }
+                case "All Trumps":
+                    bidder.nextPlayer.teamTotalScore += 26 * multiplier + declarationPoints;
+                    bidder.nextPlayer.teammate.teamTotalScore += 26 * multiplier + declarationPoints;
+                    return {
+                        winners: winners,
+                        hangingPoints: hangingPoints
+                    }
+                default:
+                    break;
+            }
 
+            switch (gameType) {
+                case "Suited":
+                    bidder.nextPlayer.teamTotalScore += Math.floor(totalRoundScore / 10);
+                    bidder.nextPlayer.teammate.teamTotalScore += Math.floor(totalRoundScore / 10);
+                    break;
+                case "No Trumps":
+                    bidder.nextPlayer.teamTotalScore += totalRoundScore / 10;
+                    bidder.nextPlayer.teammate.teamTotalScore += totalRoundScore / 10;
+                    break;
+                case "All Trumps":
+                    bidder.nextPlayer.teamTotalScore += Math.ceil(totalRoundScore / 10);
+                    bidder.nextPlayer.teammate.teamTotalScore += Math.ceil(totalRoundScore / 10);
+                    break;
+                default:
+                    break;
+            }
+            winners = [bidder.nextPlayer, bidder.nextPlayer.teammate]
+        }
+    }
     bidder.teamRoundScore = 0;
     bidder.nextPlayer.teamRoundScore = 0;
     bidder.teammate.teamRoundScore = 0;
@@ -906,7 +1008,6 @@ function calculatePoints(currentTaker, bidder, players, gameType) {
         hangingPoints: hangingPoints
     }
 }
-
 function shiftPositionsByOne(firstPlayer) {
     //Shift positions by one
     firstPlayer.position = 4;
