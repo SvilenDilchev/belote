@@ -30,10 +30,10 @@ cardLib.shuffleDeck(deck);
 // Initialize players
 function initializePlayers() {
     const players = {
-        player1: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0 },
-        player2: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0 },
-        player3: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0 },
-        player4: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0 },
+        player1: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [] },
+        player2: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [] },
+        player3: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [] },
+        player4: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [] },
     };
 
     const playerOrder = ['player1', 'player2', 'player3', 'player4'];
@@ -600,12 +600,16 @@ async function startBeloteRound(players) {
             case 'Diamonds':
             case 'Hearts':
             case 'Spades':
+                calculateDeclarations(players);
+                printDeclarations(players);
                 gameResult = await startSuitedGame(players, biddingResult.gameBid, i, biddingResult.biddingPlayer, biddingResult.multiplier);
                 break;
             case "No Trumps":
                 gameResult = await startNoTrumpsGame(players, i, biddingResult.biddingPlayer, biddingResult.multiplier);
                 break;
             case "All Trumps":
+                calculateDeclarations(players);
+                printDeclarations(players);
                 gameResult = await startAllTrumpsGame(players, i, biddingResult.biddingPlayer, biddingResult.multiplier);
                 break;
             default:
@@ -632,6 +636,66 @@ async function startBeloteRound(players) {
 
     shiftPositionsByOne(firstPlayer);
 
+}
+
+async function calculateDeclarations(players) {
+    for (const player of players) {
+        const jacks = player.hand.filter(card => card.rank === 'Jack');
+        const nines = player.hand.filter(card => card.rank === '9');
+        const aces = otherFourOfAKind.filter(card => card.rank === 'Ace');
+        const tens = otherFourOfAKind.filter(card => card.rank === '10');
+        const kings = otherFourOfAKind.filter(card => card.rank === 'King');
+        const queens = otherFourOfAKind.filter(card => card.rank === 'Queen');
+
+        if (jacks.length === 4) {
+            player.declarations.push('fourOfAKindJacks');
+        }
+        if (nines.length === 4) {
+            player.declarations.push('fourOfAKindNines');
+        }
+        if (aces.length === 4) {
+            player.declarations.push('fourOfAKindAces');
+        }
+        if (tens.length === 4) {
+            player.declarations.push('fourOfAKindTens');
+        }
+        if (kings.length === 4) {
+            player.declarations.push('fourOfAKindKings');
+        }
+        if (queens.length === 4) {
+            player.declarations.push('fourOfAKindQueens');
+        }
+
+        const suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
+        for (const suit of suits) {
+            const straightFlush = player.hand.filter(card => card.suit === suit)
+                .sort((a, b) => ranks.indexOf(a.rank) - ranks.indexOf(b.rank));
+
+            if (straightFlush.length >= 5) {
+                let count = 1;
+                let prevIndex = ranks.indexOf(straightFlush[0].rank);
+
+                for (let i = 1; i < straightFlush.length; i++) {
+                    const currentIndex = ranks.indexOf(straightFlush[i].rank);
+                    if (currentIndex - prevIndex === 1) {
+                        count++;
+                        if (count >= 3 && count <= 5) {
+                            player.declarations.push(`straightFlush${count}`);
+                        }
+                    } else {
+                        count = 1;
+                    }
+                    prevIndex = currentIndex;
+                }
+            }
+        }
+    }
+}
+
+async function printDeclarations(players) {
+    for (const player of players) {
+        console.log(`${player.nickname}'s declarations: ${player.declarations.join(', ')}`);
+    }
 }
 
 async function startNoTrumpsGame(players, roundNumber, bidder, multiplier) {
@@ -1039,5 +1103,6 @@ async function startBeloteGame() {
     }
     exit();
 }
+
 
 startBeloteGame();
