@@ -30,10 +30,10 @@ cardLib.shuffleDeck(deck);
 // Initialize players
 function initializePlayers() {
     const players = {
-        player1: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [] },
-        player2: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [] },
-        player3: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [] },
-        player4: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [] },
+        player1: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [], declarationPoints: 0 },
+        player2: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [], declarationPoints: 0 },
+        player3: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [], declarationPoints: 0 },
+        player4: { nickname: '', hand: [], teammate: null, position: null, nextPlayer: null, teamRoundScore: 0, teamTotalScore: 0, roundDeclarations: [], declarationPoints: 0 },
     };
 
     const playerOrder = ['player1', 'player2', 'player3', 'player4'];
@@ -143,8 +143,12 @@ async function requestBids(players) {
     let validBids = ['Clubs', 'Diamonds', 'Hearts', 'Spades', 'No Trumps', 'All Trumps'];
     let multiplier = 1;
 
-    while (passCount < 4 && (bidCount === 0 || passCount < 3)) {
+    
+    console.log("passCount: " + passCount + "\n");
+    console.log("bidCount: " + bidCount + "\n");
+    console.log("We'll be in + " + (passCount < 4 && (bidCount === 0 || passCount < 3)))
 
+    while (passCount < 4 && (bidCount === 0 || passCount < 3)) {
         //const player = players[`player${currentPlayerIndex}`];
 
         const player = Object.values(players).find(player => player.position === currentPlayerIndex);
@@ -188,6 +192,10 @@ async function requestBids(players) {
         }
 
         currentPlayerIndex = (currentPlayerIndex % 4) + 1;
+
+        console.log("passCount: " + passCount + "\n");
+        console.log("bidCount: " + bidCount + "\n");
+        console.log("We'll be in + " + (passCount < 4 && (bidCount === 0 || passCount < 3)))
     }
     return {
         gameBid: gameBid,
@@ -248,12 +256,6 @@ async function biddingPhase(players) {
         player.hand = sortPlayerHandByPokerOrder(player.hand);
     }
 
-    for (let i = 1; i <= 4; i++) {
-        const player = players[`player${i}`];
-        //displayPlayerHand(player);
-        //console.log('\n');
-    }
-
     // Call the function to start requesting bids from players
     const gameBid = await requestBids(players);
     return gameBid;
@@ -263,12 +265,14 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder, multiplier
 
     function updatePlayableCards(player, requestedSuit, currentTaker, winningCard, gameBid) {
 
+        /*
         console.log("\n");
         console.log("current player is: " + player.nickname);
         console.log(requestedSuit + " is requested suit");
         console.log("current taker is: " + currentTaker.nickname);
         console.log("winning card: " + winningCard.rank + " of " + winningCard.suit);
         console.log("game bid: " + gameBid);
+        */
 
         const hasRequestedSuit = player.hand.some(card => card.suit === requestedSuit);
 
@@ -280,7 +284,7 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder, multiplier
             });
             if (requestedSuit === gameBid) {
 
-                console.log("requested suit is game bid");
+                //console.log("requested suit is game bid");
                 let hasOverTrump = false;
 
                 player.hand.forEach(card => {
@@ -288,7 +292,7 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder, multiplier
                         hasOverTrump = true;
                     }
                 });
-                console.log("has over trump: " + hasOverTrump);
+                //console.log("has over trump: " + hasOverTrump);
                 if (hasOverTrump) {
                     player.hand.forEach(card => {
                         if (card.isTrump && !(compareCardRankTrump(card, winningCard) > 0)) {
@@ -306,7 +310,7 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder, multiplier
                 }
                 if (winningCard.isTrump) {
 
-                    console.log("winning card is trump");
+                    //console.log("winning card is trump");
                     let hasOverTrump = false;
 
                     player.hand.forEach(card => {
@@ -314,7 +318,7 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder, multiplier
                             hasOverTrump = true;
                         }
                     });
-                    console.log("has over trump: " + hasOverTrump);
+                    //console.log("has over trump: " + hasOverTrump);
                     if (hasOverTrump) {
                         player.hand.forEach(card => {
                             if ((!card.isTrump) || (card.isTrump && !(compareCardRankTrump(card, winningCard) > 0))) {
@@ -350,22 +354,32 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder, multiplier
     let currentPlayerIndex = 1;
 
     for (let i = 1; i <= 4; i++) {
-
         if (currentPlayerIndex == 1) {
             resetCardsToPlayable(players);
             player = Object.values(players).find(player => player.position === 1);
+            if(roundNumber === 1){
+                declarationString = await askPlayerToDeclare(player);
+                printPlayerDeclarations(declarationString, player);
+                savePlayerDeclarations(declarationString, player);
+            }
             selectedCardIndex = await getPlayerCardIndex(player) - 1;
             currentTaker = player;
             winningCard = player.hand[selectedCardIndex];
             requestedSuit = player.hand[selectedCardIndex].suit;
         } else {
             player = Object.values(players).find(player => player.position === currentPlayerIndex);
+            if(roundNumber === 1){
+                declarationString = await askPlayerToDeclare(player);
+                printPlayerDeclarations(declarationString, player);
+                savePlayerDeclarations(declarationString, player);
+            }
             updatePlayableCards(player, requestedSuit, currentTaker, winningCard, gameBid);
-            console.log("\n");
+            //console.log("\n");
             selectedCardIndex = await getPlayerCardIndex(player) - 1;
         }
 
         const selectedCard = player.hand[selectedCardIndex]; // Get the selected card
+        beloteCheck(selectedCard, requestedSuit, player)
         cardsPlayed.push(selectedCard); // Add the selected card to the cardsPlayed list
 
         if (!winningCard.isTrump) {
@@ -422,6 +436,130 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder, multiplier
         winners: winners,
         hangingPoints: hangingPoints
     };
+}
+
+function beloteCheck(selectedCard, wantedSuit, player){
+    if ((selectedCard.rank === 'King' || selectedCard.rank === 'Queen') && selectedCard.isTrump) {
+        const selectedSuit = selectedCard.suit;
+        const hasKing = player.hand.some(card => card.rank === 'King' && card.suit === selectedSuit);
+        const hasQueen = player.hand.some(card => card.rank === 'Queen' && card.suit === selectedSuit);
+        
+        if (hasKing && hasQueen && selectedSuit === wantedSuit) {
+            console.log(`${player.nickname} declares Belote.`);
+            player.roundDeclarations.push('Belote');
+        }
+    }
+}
+
+async function askPlayerToDeclare(player) {
+    if(player.roundDeclarations.length === 0){
+        return;
+    }    
+    return new Promise((resolve) => {
+        const askForDeclarations = () => {
+            console.log(`${player.nickname}'s declarations: ${player.roundDeclarations.join(', ')}`);
+            rl.question(`${player.nickname}, enter the indexes of the declarations you want to play separated by spaces: `, (declarationString) => {
+                if (isDeclarationStringValid(declarationString, player)) {
+                    console.log("Invalid declaration string.");
+                    askForDeclarations(); // Ask again for a valid card index
+                } else {
+                    resolve(declarationString);
+                }
+            });
+        };
+
+        askForDeclarations();
+    });
+}
+
+function printPlayerDeclarations(declarationString, player) {
+    const declarationIndexes = declarationString.split(' ').filter(index => index.trim() !== '');
+    for (const index of declarationIndexes) {
+        const declarationIndex = parseInt(index);
+        let declaration = player.roundDeclarations[declarationIndex];
+        if(declaration.includes('fourOfAKind')){
+            console.log(`${player.nickname} declares a four of a kind.`);
+        }
+        if(declaration.includes("straightFlush")){
+            let count = parseInt(declaration.substring(13, 14));
+            switch(count){
+                case 3:
+                    console.log(`${player.nickname} declares a tierce.`);
+                    break;
+                case 4:
+                    console.log(`${player.nickname} declares a 50.`);
+                    break;
+                case 5:
+                    console.log(`${player.nickname} declares an 100.`);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+}
+
+function savePlayerDeclarations(declarationString, player) {
+    const declarationIndexes = declarationString.split(' ').filter(index => index.trim() !== '');
+    const validDeclarations = [];
+
+    for (const index of declarationIndexes) {
+        const declarationIndex = parseInt(index);
+        if (declarationIndex >= 0 && declarationIndex < player.roundDeclarations.length) {
+            validDeclarations.push(player.roundDeclarations[declarationIndex]);
+        }
+    }
+
+    player.roundDeclarations = validDeclarations;
+}
+
+function isDeclarationStringValid(declarationString, player) {
+    const declarationIndexes = declarationString.split(' ').filter(index => index.trim() !== '');
+    const declarations = [];
+
+    for (const index of declarationIndexes) {
+        if (isNaN(index)) {
+            return false;
+        }
+        const declarationIndex = parseInt(index);
+        if (declarationIndex >= 0 && declarationIndex < player.roundDeclarations.length) {
+            declarations.push(player.roundDeclarations[declarationIndex]);
+        } else {
+            return false;
+        }
+    }
+
+    if (declarations.some(declaration => declaration.includes('fourOfAKind'))) {
+        const fourOfAKindDeclarations = declarations.filter(declaration => declaration.includes('fourOfAKind'));
+        if (fourOfAKindDeclarations.length === 1 && declarations.some(declaration => declaration.includes('straightFlush'))) {
+            let kareType = fourOfAKindDeclarations[0].substring(12, fourOfAKindDeclarations[0].length);
+            let straightFlushType = declarations.find(declaration => declaration.includes('straightFlush')).substring(15, declarations.find(declaration => declaration.includes('straightFlush')).length);
+            let straightFlushCount = parseInt(declarations.find(declaration => declaration.includes('straightFlush')).substring(13, 14));
+            let straightFlushCardRanks = getCardRanks(straightFlushType, straightFlushCount);
+            if(straightFlushCardRanks.includes(kareType)){
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+function getCardRanks(highestRank, count) {
+    // Define your logic to get the card ranks based on the highest rank and count
+    // You can use the highestRank and count parameters to generate the card ranks
+
+    // Example: Assuming 'highestRank' is 'K' and 'count' is 5
+    const ranks = ['7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
+    const startIndex = ranks.indexOf(highestRank);
+
+    // Ensure startIndex is valid
+    if (startIndex !== -1) {
+        return ranks.slice(startIndex, startIndex + count);
+    }
+
+    // Handle the case when the highestRank is not found
+    return [];
 }
 
 function resetCardsToPlayable(players) {
@@ -565,7 +703,7 @@ async function startBeloteRound(players) {
         let currentFirst = Object.values(players).find(player => player.position === 1);
         shiftPositionsByOne(currentFirst);
 
-        const biddingResult = await biddingPhase(players);
+        biddingResult = await biddingPhase(players);
     }
 
     console.log(`The game bid is: ${biddingResult.gameBid}\n`);
@@ -639,31 +777,32 @@ async function startBeloteRound(players) {
 }
 
 async function calculateDeclarations(players) {
-    for (const player of players) {
+    for (let i = 1; i <= 4; i++) {
+        const player = players[`player${i}`];
         const jacks = player.hand.filter(card => card.rank === 'Jack');
         const nines = player.hand.filter(card => card.rank === '9');
-        const aces = otherFourOfAKind.filter(card => card.rank === 'Ace');
-        const tens = otherFourOfAKind.filter(card => card.rank === '10');
-        const kings = otherFourOfAKind.filter(card => card.rank === 'King');
-        const queens = otherFourOfAKind.filter(card => card.rank === 'Queen');
+        const aces = player.hand.filter(card => card.rank === 'Ace');
+        const tens = player.hand.filter(card => card.rank === '10');
+        const kings = player.hand.filter(card => card.rank === 'King');
+        const queens = player.hand.filter(card => card.rank === 'Queen');
 
         if (jacks.length === 4) {
-            player.declarations.push('fourOfAKindJacks');
+            player.roundDeclarations.push('fourOfAKindJacks');
         }
         if (nines.length === 4) {
-            player.declarations.push('fourOfAKindNines');
+            player.roundDeclarations.push('fourOfAKindNines');
         }
         if (aces.length === 4) {
-            player.declarations.push('fourOfAKindAces');
+            player.roundDeclarations.push('fourOfAKindAces');
         }
         if (tens.length === 4) {
-            player.declarations.push('fourOfAKindTens');
+            player.roundDeclarations.push('fourOfAKindTens');
         }
         if (kings.length === 4) {
-            player.declarations.push('fourOfAKindKings');
+            player.roundDeclarations.push('fourOfAKindKings');
         }
         if (queens.length === 4) {
-            player.declarations.push('fourOfAKindQueens');
+            player.roundDeclarations.push('fourOfAKindQueens');
         }
 
         const suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades'];
@@ -674,13 +813,18 @@ async function calculateDeclarations(players) {
             if (straightFlush.length >= 5) {
                 let count = 1;
                 let prevIndex = ranks.indexOf(straightFlush[0].rank);
+                let highestRank = straightFlush[0].rank;
 
                 for (let i = 1; i < straightFlush.length; i++) {
                     const currentIndex = ranks.indexOf(straightFlush[i].rank);
                     if (currentIndex - prevIndex === 1) {
                         count++;
-                        if (count >= 3 && count <= 5) {
-                            player.declarations.push(`straightFlush${count}`);
+                        if (count >= 3) {
+                            highestRank = straightFlush[i].rank;
+                            if(count > 5){
+                                count = 5;
+                            }
+                            player.roundDeclarations.push(`straightFlush${count} ${highestRank}`);
                         }
                     } else {
                         count = 1;
@@ -693,8 +837,9 @@ async function calculateDeclarations(players) {
 }
 
 async function printDeclarations(players) {
-    for (const player of players) {
-        console.log(`${player.nickname}'s declarations: ${player.declarations.join(', ')}`);
+    for (let i = 1; i <= 4; i++) {
+        const player = players[`player${i}`];
+        console.log(`${player.nickname}'s declarations: ${player.roundDeclarations.join(', ')}`);
     }
 }
 
@@ -817,18 +962,29 @@ async function startAllTrumpsGame(players, roundNumber, bidder, multiplier) {
         if (currentPlayerIndex == 1) {
             resetCardsToPlayable(players);
             player = Object.values(players).find(player => player.position === 1);
+            if(roundNumber === 1){
+                declarationString = await askPlayerToDeclare(player);
+                printPlayerDeclarations(declarationString, player);
+                savePlayerDeclarations(declarationString, player);
+            }
             selectedCardIndex = await getPlayerCardIndex(player) - 1;
             currentTaker = player;
             winningCard = player.hand[selectedCardIndex];
             requestedSuit = player.hand[selectedCardIndex].suit;
         } else {
             player = Object.values(players).find(player => player.position === currentPlayerIndex);
+            if(roundNumber === 1){
+                declarationString = await askPlayerToDeclare(player);
+                printPlayerDeclarations(declarationString, player);
+                savePlayerDeclarations(declarationString, player);
+            }
             updatePlayableCards(player, requestedSuit, winningCard);
             console.log("\n");
             selectedCardIndex = await getPlayerCardIndex(player) - 1;
         }
 
         const selectedCard = player.hand[selectedCardIndex]; // Get the selected card
+        beloteCheck(selectedCard, requestedSuit, player)
         cardsPlayed.push(selectedCard); // Add the selected card to the cardsPlayed list
 
         if (selectedCard.suit === requestedSuit) {
@@ -873,10 +1029,14 @@ async function startAllTrumpsGame(players, roundNumber, bidder, multiplier) {
 function calculatePoints(currentTaker, bidder, players, gameType, multiplier) {
     let hangingPoints = 0;
     let winners = null;
-    let declarationPoints = 0;
+
+    calculateDeclarationPoints(players);
+    addDeclarationPoints(players);
 
     currentTaker.teamRoundScore += 10;
     currentTaker.teammate.teamRoundScore += 10;
+
+    let declarationPoints = (bidder.declarationPoints + bidder.teammate.declarationPoints + bidder.nextPlayer.declarationPoints + bidder.nextPlayer.teammate.declarationPoints) / 10;
 
     if (gameType === "No Trumps") {
         totalRoundScore = 2 * (players.player1.teamRoundScore + players.player2.teamRoundScore);
@@ -1072,6 +1232,150 @@ function calculatePoints(currentTaker, bidder, players, gameType, multiplier) {
         hangingPoints: hangingPoints
     }
 }
+
+function calculateDeclarationPoints(players) {
+    let highestFourOfAKindRank = null;
+    let highestKarePlayer = null;
+    let highestStraightFlushType = null;
+    let highestStraightFlushCount = 0;
+    let highestStraightFlushPlayer = null;
+
+
+    for (let i = 1; i <= 4; i++) {
+        const player = players[`player${i}`];
+        player.declarationPoints += countBeloteDeclarations(player) * 20;
+
+        for (const declaration of player.roundDeclarations) {
+            if (declaration.includes('fourOfAKind')) {
+                // Extract the rank from the declaration
+                const rank = declaration.substring(12);
+
+                // Update the highestFourOfAKindRank and highestKarePlayer
+                if (highestFourOfAKindRank === null || compareDeclarationRanks(rank, highestFourOfAKindRank) > 0) {
+                    highestFourOfAKindRank = rank;
+                    highestKarePlayer = player;
+                }
+            }
+
+            if (declaration.includes('straightFlush')) {
+                // Extract type and count from the declaration
+                const type = declaration.substring(15);
+                const count = parseInt(declaration.substring(13, 14));
+    
+                // Update the highestStraightFlushType, highestStraightFlushCount, and highestStraightFlushPlayer
+                if (
+                    highestStraightFlushType === null ||
+                    count > highestStraightFlushCount ||
+                    (count === highestStraightFlushCount && compareRanks(type, highestStraightFlushType) > 0)
+                ) {
+                    highestStraightFlushType = type;
+                    highestStraightFlushCount = count;
+                    highestStraightFlushPlayer = player;
+                }
+            }
+        }
+    }
+
+    // Check if the highestKarePlayer is not null
+    if (highestKarePlayer) {
+        // Iterate through all "fourOfAKind" declarations of the highestKarePlayer
+        for (const declaration of highestKarePlayer.roundDeclarations) {
+            if (declaration.includes('fourOfAKind')) {
+                // Extract the rank from the declaration
+                const rank = declaration.substring(12);
+
+                // Add points based on the specified conditions
+                let pointsToAdd = 0;
+                if (rank === 'Jack') {
+                    pointsToAdd = 200;
+                } else if (rank === '9') {
+                    pointsToAdd = 150;
+                } else {
+                    pointsToAdd = 100;
+                }
+
+                // Add points to the highestKarePlayer's declarationPoints
+                highestKarePlayer.declarationPoints += pointsToAdd;
+            }
+        }
+
+        for (const declaration of highestKarePlayer.teammate.roundDeclarations) {
+            if (declaration.includes('fourOfAKind')) {
+                const rank = declaration.substring(12);
+
+                let pointsToAdd = 0;
+                if (rank === 'Jack') {
+                    pointsToAdd = 200;
+                } else if (rank === '9') {
+                    pointsToAdd = 150;
+                } else {
+                    pointsToAdd = 100;
+                }
+
+                highestKarePlayer.teammate.declarationPoints += pointsToAdd;
+            }
+        }
+    }
+    if(highestStraightFlushPlayer){
+        for (const declaration of highestStraightFlushPlayer.roundDeclarations) {
+            if (declaration.includes('straightFlush')) {
+                const count = parseInt(declaration.substring(13, 14));
+
+                let pointsToAdd = 0;
+                if (count === 5) {
+                    pointsToAdd = 100;
+                } else if (count === 4) {
+                    pointsToAdd = 50;
+                } else {
+                    pointsToAdd = 20;
+                }
+
+                highestStraightFlushPlayer.declarationPoints += pointsToAdd;
+            }
+        }
+        for (const declaration of highestStraightFlushPlayer.teammate.roundDeclarations) {
+            if (declaration.includes('straightFlush')) {
+                const count = parseInt(declaration.substring(13, 14));
+
+                let pointsToAdd = 0;
+                if (count === 5) {
+                    pointsToAdd = 100;
+                } else if (count === 4) {
+                    pointsToAdd = 50;
+                } else {
+                    pointsToAdd = 20;
+                }
+
+                highestStraightFlushPlayer.teammate.declarationPoints += pointsToAdd;
+            }
+        }
+    }
+}
+
+function addDeclarationPoints(players) {
+    for (let i = 1; i <= 4; i++) {
+        const player = players[`player${i}`];
+        player.teamRoundScore += player.declarationPoints + player.teammate.declarationPoints;
+    }
+}
+
+
+function compareDeclarationRanks(rank1, rank2) {
+    const ranksOrder = ['7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace'];
+
+    return ranksOrder.indexOf(rank1) - ranksOrder.indexOf(rank2);
+}
+
+function countBeloteDeclarations(player) {
+    let count = 0;
+    for (let declaration of player.roundDeclarations) {
+        if (declaration === "Belote") {
+            count++;
+        }
+    }
+    return count;
+}
+
 function shiftPositionsByOne(firstPlayer) {
     //Shift positions by one
     firstPlayer.position = 4;
