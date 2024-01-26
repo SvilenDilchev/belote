@@ -144,9 +144,9 @@ async function requestBids(players) {
     let multiplier = 1;
 
     
-    console.log("passCount: " + passCount + "\n");
-    console.log("bidCount: " + bidCount + "\n");
-    console.log("We'll be in + " + (passCount < 4 && (bidCount === 0 || passCount < 3)))
+    //console.log("passCount: " + passCount + "\n");
+    //console.log("bidCount: " + bidCount + "\n");
+    //console.log("We'll be in + " + (passCount < 4 && (bidCount === 0 || passCount < 3)))
 
     while (passCount < 4 && (bidCount === 0 || passCount < 3)) {
         //const player = players[`player${currentPlayerIndex}`];
@@ -193,9 +193,9 @@ async function requestBids(players) {
 
         currentPlayerIndex = (currentPlayerIndex % 4) + 1;
 
-        console.log("passCount: " + passCount + "\n");
-        console.log("bidCount: " + bidCount + "\n");
-        console.log("We'll be in + " + (passCount < 4 && (bidCount === 0 || passCount < 3)))
+        //console.log("passCount: " + passCount + "\n");
+        //console.log("bidCount: " + bidCount + "\n");
+        //console.log("We'll be in + " + (passCount < 4 && (bidCount === 0 || passCount < 3)))
     }
     return {
         gameBid: gameBid,
@@ -415,11 +415,9 @@ async function startSuitedGame(players, gameBid, roundNumber, bidder, multiplier
     let winners = null;
 
     if (roundNumber == 7) {
-        if (roundNumber == 7) {
-            calculationResult = calculatePoints(currentTaker, bidder, players, "Suited", multiplier);
-            winners = calculationResult.winners;
-            hangingPoints = calculationResult.hangingPoints;
-        }
+        calculationResult = calculatePoints(currentTaker, bidder, players, "Suited", multiplier);
+        winners = calculationResult.winners;
+        hangingPoints = calculationResult.hangingPoints;
     }
 
     currentTaker.position = 1;
@@ -1041,6 +1039,7 @@ async function startAllTrumpsGame(players, roundNumber, bidder, multiplier) {
 }
 
 function calculatePoints(currentTaker, bidder, players, gameType, multiplier) {
+    console.log("Calculating points...")
     let hangingPoints = 0;
     let winners = null;
 
@@ -1058,9 +1057,12 @@ function calculatePoints(currentTaker, bidder, players, gameType, multiplier) {
         totalRoundScore = players.player1.teamRoundScore + players.player2.teamRoundScore;
     }
 
-    if (bidder.teamRoundScore > totalRoundScore / 2) {
+    console.log("total round score: " + totalRoundScore);
 
+    if (bidder.teamRoundScore > totalRoundScore / 2) {
+        console.log("\nGame Taken")
         if (multiplier !== 1) {
+            console.log("Double")
             switch (gameType) {
                 case "Suited":
                     bidder.teamTotalScore += 16 * multiplier + declarationPoints;
@@ -1112,30 +1114,34 @@ function calculatePoints(currentTaker, bidder, players, gameType, multiplier) {
                 break;
         }
 
-        if (bidderLastPointValue === opponentLastPointValue) {
-            if (bidderHardPoints < opponetHardPoints) {
+        if(bidderLastPointValue >= roundingIndex){
+            if(bidderLastPointValue === opponentLastPointValue){
+                if (bidderHardPoints < opponetHardPoints) {
+                    bidderHardPoints += 1;
+                } else {
+                    opponetHardPoints += 1;
+                }
+            }else{
                 bidderHardPoints += 1;
-            } else {
-                opponetHardPoints += 1;
-            }
-        } else {
-            if (bidderLastPointValue >= roundingIndex) {
-                bidderHardPoints += 1;
-            }
-            if (opponentLastPointValue >= roundingIndex) {
-                opponetHardPoints += 1;
             }
         }
+        if(opponentLastPointValue >= roundingIndex){
+            opponetHardPoints += 1;
+        }
+
+        console.log("bidder hard points: " + bidderHardPoints);
         bidder.teamTotalScore += bidderHardPoints;
         bidder.teammate.teamTotalScore += bidderHardPoints;
+        console.log("opponent hard points: " + opponetHardPoints);
         bidder.nextPlayer.teamTotalScore += opponetHardPoints;
         bidder.nextPlayer.teammate.teamTotalScore += opponetHardPoints;
 
         winners = [bidder, bidder.teammate]
 
     } else if (bidder.teamRoundScore === totalRoundScore / 2) {
-
+        console.log("\nGame Hanging")
         if (multiplier !== 1) {
+            console.log("Double")
             switch (gameType) {
                 case "Suited":
                     bidder.nextPlayer.teamTotalScore += 8 * multiplier + declarationPoints / 2;
@@ -1190,7 +1196,9 @@ function calculatePoints(currentTaker, bidder, players, gameType, multiplier) {
                 break;
         }
     } else {
+        console.log("\nGame Inside")
         if (multiplier !== 1) {
+            console.log("Double")
             switch (gameType) {
                 case "Suited":
                     bidder.nextPlayer.teamTotalScore += 16 * multiplier + declarationPoints;
@@ -1216,7 +1224,7 @@ function calculatePoints(currentTaker, bidder, players, gameType, multiplier) {
                 default:
                     break;
             }
-
+        }else{
             switch (gameType) {
                 case "Suited":
                     bidder.nextPlayer.teamTotalScore += Math.floor(totalRoundScore / 10);
@@ -1233,18 +1241,25 @@ function calculatePoints(currentTaker, bidder, players, gameType, multiplier) {
                 default:
                     break;
             }
-            winners = [bidder.nextPlayer, bidder.nextPlayer.teammate]
         }
     }
-    bidder.teamRoundScore = 0;
-    bidder.nextPlayer.teamRoundScore = 0;
-    bidder.teammate.teamRoundScore = 0;
-    bidder.nextPlayer.teammate.teamRoundScore = 0;
-
+    winners = [bidder.nextPlayer, bidder.nextPlayer.teammate]
+    resetPlayerPoints(players);
+    
     return {
         winners: winners,
         hangingPoints: hangingPoints
     }
+}
+
+function resetPlayerPoints(players) {
+    for (let i = 1; i <= 4; i++) {
+        const player = players[`player${i}`];
+        player.teamRoundScore = 0;
+        player.declarationPoints = 0;
+        player.roundDeclarations = [];
+    }
+
 }
 
 function calculateDeclarationPoints(players) {
@@ -1253,7 +1268,7 @@ function calculateDeclarationPoints(players) {
     let highestStraightFlushType = null;
     let highestStraightFlushCount = 0;
     let highestStraightFlushPlayer = null;
-
+    let annulStraightFlushes = false;
 
     for (let i = 1; i <= 4; i++) {
         const player = players[`player${i}`];
@@ -1280,11 +1295,18 @@ function calculateDeclarationPoints(players) {
                 if (
                     highestStraightFlushType === null ||
                     count > highestStraightFlushCount ||
-                    (count === highestStraightFlushCount && compareRanks(type, highestStraightFlushType) > 0)
+                    (count === highestStraightFlushCount && compareDeclarationRanks(type, highestStraightFlushType) > 0)
                 ) {
                     highestStraightFlushType = type;
                     highestStraightFlushCount = count;
                     highestStraightFlushPlayer = player;
+                    annulStraightFlushes = false;
+                } else if (
+                    highestStraightFlushType === null ||
+                    count > highestStraightFlushCount ||
+                    (count === highestStraightFlushCount && compareDeclarationRanks(type, highestStraightFlushType) == 0)
+                ) {
+                    annulStraightFlushes = true;
                 }
             }
         }
@@ -1330,7 +1352,7 @@ function calculateDeclarationPoints(players) {
             }
         }
     }
-    if(highestStraightFlushPlayer){
+    if(highestStraightFlushPlayer && !annulStraightFlushes){
         for (const declaration of highestStraightFlushPlayer.roundDeclarations) {
             if (declaration.includes('straightFlush')) {
                 const count = parseInt(declaration.substring(13, 14));
