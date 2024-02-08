@@ -1,0 +1,26 @@
+.create-lobby-button {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    width: 100%;
+    height: 50px;
+    font-size: 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+}
+.join-lobby-button {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    width: 100%;
+    height: 50px;
+    font-size: 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+}

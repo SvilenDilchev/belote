@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Belote</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+    <div class="create-lobby-button" onclick="createLobby()">Create Lobby</div>
+    <div class="join-lobby-button" onclick="joinLobby()">Join Lobby</div>
+    <div class="lobby-code">
+      <textarea id="lobby-code">
+
+      </textarea>
+    </div>
+
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.2/gsap.min.js"
+      integrity="sha512-kVlGhj2qFy+KBCFuvjBJTGUMxbdqJKs4yK2jh0e0VPhWUPiPC87bzm4THmaaIee3Oj7j6sDpTTgm2EPPiESqBg=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script src="../js/index.js"></script>
+    <script src="../js/classes/Lobby.js"></script>
+    <script src="../js/classes/Player.js"></script>
+</body>
+</html>
