@@ -1,11 +1,12 @@
 import io from "socket.io-client";
 import { createContext } from "react";
 
-// Default server URL for socket connection
-const DEFAULT_SERVER_URL = 'http://localhost:3001';
+// Use environment variable or default to production API
+const SERVER_URL =
+  process.env.REACT_APP_API_URL || "https://belote-api.svilen.dev";
 
 // Create socket connection
-export const socket = io.connect(DEFAULT_SERVER_URL);
+export const socket = io.connect(SERVER_URL);
 
 // Create context for socket
 export const SocketContext = createContext(socket);
